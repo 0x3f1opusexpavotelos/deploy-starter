@@ -1,0 +1,5 @@
+service: sass
+
+provider:
+  nmae: aws
+  region: us-east-1

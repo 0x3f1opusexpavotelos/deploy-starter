@@ -1,0 +1,42 @@
+FROM unbuntu:22.04
+
+# Install OpenSSH Server
+RUN dnf -y install openssh-server
+
+#COPY remote-key.pub /home/remote-user/.ssh/authorized_keys
+
+RUN 
+    echo "anton" > /etc/hostname
+    # Adding user `opus' ...
+    # Adding new group `opus' (1001) ...
+    # Adding new user `opus' (1001) with group `opus' ...
+    # Creating home directory `/home/opus' ...
+    # Copying files from `/etc/skel' ...
+    # New password: 
+    adduser remote_user && \
+    # echo "password" | openssl passwd -stdin store the hash version in /etc/shadow
+    echo "0x13f" | passwd remote-user --stdin && \
+    # cat /etc/group | grep sudo 
+    # usermod -aG sudo remote-user
+    usermod -aG wheel remote-user && \
+    # Add public key to authorized_keys
+    mkdir -p /home/remote-user/.ssh && \
+    cat /data/coolify/ssh/keys/id.root@host.docker.internal.pub >> ~/.ssh/authorized_keys
+    # set proper permission
+    chmod -R go=,u=rwx /home/remote_user/.ssh && \ 
+    chmod go-rwx,u=rw /home/remote_user/.ssh/authorized_keys && \
+    chown -R remote-user:remote-user /home/remote-user/.ssh 
+    # systemctl restart sshd.service
+    # systemctl reload sshd
+    # systemctl enable --now sshd
+    # systemctl -l --type service --all|grep ssh
+    # ssh-keygen -R ec2
+
+RUN /usr/sbin/sshd-keygen
+
+
+RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
+    python3 get-pip.py && \
+    pip3 install awscli --upgrade
+
+CMD /usr/sbin/sshd -D

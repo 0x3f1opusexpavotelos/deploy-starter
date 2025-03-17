@@ -1,0 +1,28 @@
+services:
+  nginx:
+    image: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      # /etc/nginx/sites-enabled/*;
+      - ./certs:/certs
+      # copy cert to container
+      # - /etc/letsencrypt:/etc/letsencrypt
+  mailserver:
+      environment:
+        # - SSL_TYPE=letsencrypt
+        - SSL_TYPE=manual
+      volumes:
+        - ./certs/:/etc/letsencrypt
+        # - ./docker-data/certbot/certs/:/etc/letsencrypt
+        # mount local certs folder as a voulme
+        # - /etc/letsencrypt:/etc/letsencrypt:ro
+
+  certbot:
+    image: certbot/certbot
+    command: certonly --standalone -d $DOMAIN_NAME --non-interactive --agree-tos -m $EMAIL --config-dir certs
+    environment:
+      - DOMAIN_NAME=0x13f.me
+      - EMAIL=hack.xiyuan@gmail.com

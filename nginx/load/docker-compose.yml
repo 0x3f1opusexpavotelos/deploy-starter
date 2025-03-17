@@ -1,0 +1,20 @@
+services:
+    nginx: 
+      image: nginx
+      ports:
+        - "80:80"
+      volumes:
+        - "./nginx.conf:/etc/nginx/nginx.conf"
+      hostname: nginx
+    echo1: 
+      image: weshigbee/nginx-echo
+      ports:
+        - "5000:8080"
+    echo2: 
+      image: weshigbee/nginx-echo
+    echo3: 
+      image: weshigbee/nginx-echo
+        
+
+
+        

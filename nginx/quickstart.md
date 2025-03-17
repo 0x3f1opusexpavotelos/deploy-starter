@@ -1,3 +1,61 @@
+# nginx
+
+
+reverse proxy
+    - load balance(hiden backend endpoint.replicate cert, single point failer transfer, health check)
+    - backend routing
+    - cache
+    - api gateway
+
+
+operate on  layer 4, you gain access to tcp context
+    source ip, source port,
+    dest-ip, dest-port,
+    packet insepction(tls hello/ syn)
+
+mysql protocol(layer 4 proxying is useful when nginx doesn't understand the protocol)
+webrtc stream context
+
+layer 7. we see the applcation, http/gRPC, websocket context
+access to more context
+`$request_uri` which page they wanna visit, `$host` where the client is come from
+`header` `cookie` 
+
+
+
+tls: end-to-end encryption
+
+
+tls termination
+
+tls passthrough
+
+client-side timeout
+client_header_timeout: transfer entire headers(default to 60s) 408(Request Time-out)
+client_body_timeout: big-file-upload chunk strategy
+keepalive_timeout: `conncetion:keep-alive`,(establish connection every request) cleanup idle connection
+lengering_timeout: wait close connection
+resolver_timeout: 
+
+
+error attemp to communicate with server
+
+proxy_connect
+proxy_send
+prxoy_read
+proxy_next_upstream_timeout: time before Passing a request to the next server
+proxy_next_upstream_tries
+server-side timeout
+
+
+
+
+
+nginx timeout ensure efficient use of resources
+
+
+server web content
+
 portal dashboard
 
 ## initial setup
@@ -11,16 +69,19 @@ sudo killall -HUP mDNSResponder
 sudo dnf update -y
 sudo dnf install python3
 sudo dnf install python3-pip
-pip3 install virtualenv
+pip3 install virtualenv`
 
 sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 sudo dnf install -y neovim python3-neovim
 
 
+sudo apt install bat
+
 #  to know which version of CentOS 
 cat /etc/centos-release
 # to know which version of unbuntu
 cat /etc/os-release
+
 
 # add epel repo 
 sudo dnf install epel-release
@@ -56,8 +117,32 @@ Push to Deploy
 
 - can access via ssh
 
-- non-root, sudo-enabled user
+##  non-root, sudo-enabled user connection
+`ssh -i "~/.ssh/id.root@host.docker.droplet" -o IdentitiesOnly=yes opus@droplet`
 
+
+```[~/.ssh/config]
+Host droplet
+    HostName 128.199.172.202
+    User opus
+    PreferredAuthentications publickey
+    # IdentityOnly
+    IdentityFile ~/.ssh/id.root@host.docker.droplet
+    AddKeysToAgent yes
+    # 连接的服务器的地址和端口作为变量并以参数的形式传递给 ProxyCommand  using socks5 tpc协议（ssh,sftp)
+    ProxyCommand nc -X 5 -x 127.0.0.1:6153 %h %p
+    # or using jump hosts
+    ProxyCommand ssh jumphost -W %h:%p
+```
+```bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id.root@host.docker.droplet
+ssh droplet
+# transfer local file
+# using SFTP, SCP, or Rsync 
+# or just login shell and  put deploy.sh mail/
+sftp droplet /home/opus/mail <<< $'put deploy.sh'
+```
 This could be:
 - A VPS (Virtual Private Server)
 - A Dedicated Server
@@ -527,7 +612,33 @@ map domains name to an IP address.
 ::: code-group
 ````bash [nginx]
 # manage nginx process 
-sudo systemctl status nginx # stop,start,restart,reload,disable,enable (sudo nginx -t error checking in config)
+service nginx
+Usage: nginx {start|stop|restart|reload|force-reload|status|configtest|rotate|upgrade}
+
+
+apt show nginx
+ps axf | grep nginx
+batcat /etc/nginx/nginx.conf
+sudo tail --follow /var/log/nginx/error.log
+sudo tail --follow /var/log/nginx/access.log
+
+# the host header driver sever selection
+# you can hvae multi service listen on same port
+curl localhost:8081 -v -H "Host:mail.host.com"
+
+# stream module
+docker compose exec nginx bash
+#   -s signal     : send signal to a master process: stop, quit, reopen, reload
+nginx -s reload
+
+``` [/etc/nginx/nginx.conf]
+http {
+    ...
+    # Virtual Host Configs
+     include /etc/nginx/conf.d/*.conf;
+     include /etc/nginx/sites-enabled/*;
+}
+```
 
 
 # multi-domain content layout
@@ -685,3 +796,6 @@ Storage Server
  Proxy / Load Balance
  Monitoring
  Security
+
+
+ 

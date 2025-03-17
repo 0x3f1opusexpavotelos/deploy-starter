@@ -1,0 +1,11 @@
+services:
+  nginx:
+    image: nginx
+    ports:
+      - "80:80"
+      - "8081:8081"
+      - "8070:8080"
+    volumes:
+      - ./ngix.conf:/etc/nginx/nginx.conf
+      - ../static/nginx_org/out:/out
+    

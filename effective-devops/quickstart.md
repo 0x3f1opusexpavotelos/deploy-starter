@@ -1,17 +1,75 @@
+---
+title: no vendor lock-in self-hoisted solution
+---
 # nginx
 
 
-reverse proxy
-    - load balance(hiden backend endpoint.replicate cert, single point failer transfer, health check)
-    - backend routing
-    - cache
-    - api gateway
+
+--tag gcr.io/PROJECT-ID/helloworld
+
+docker pull ghcr.io/phusion/baseimage:noble-1.0.1
 
 
-operate on  layer 4, you gain access to tcp context
-    source ip, source port,
-    dest-ip, dest-port,
-    packet insepction(tls hello/ syn)
+kubectl create deployment
+
+kubectl apply -f config.yml
+
+```Docklefile
+FROM node:20-alpine AS base
+
+
+
+# By default, Nginx looks in the /usr/share/nginx/html directory inside of the container for files to serve.
+
+
+
+WOKRDIR /app
+
+COPY package*.json pnpm-lock.yaml yarn.loclk ./
+
+RUN  \
+    if [ -f bun.lock ]; then bun install --frozen-lockfile; \
+    elif [ -f pnpm-lock.yaml]; then corepack enable pnpm && pnpm; \
+    elif [ -f yarn.lock]; then yarn --frozen-lockfile; \
+    elif [ -f package.json]; then npm ci; \
+    else echo  "Lockfile not found."  && exit 1; \
+    f
+
+COPY ./package.json /app/packag.json
+
+# run command as user
+
+# Image Variants
+#  the Docker registry and GHCR (GitHub Container Registry)
+
+FROM nginx:stable-apline as runner
+
+COPY index.html /usr/share/nginx/html/index.html
+COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/build /usr/share/nginx/html
+CMD ["nginx"]
+```
+
+```compose.yml
+ web:
+    build:
+        context: .
+        Dockefile: Dockfile
+  volumes:
+   - ./templates:/etc/nginx/templates
+  environment:
+   - NGINX_HOST=foobar.com
+   - NGINX_PORT=80
+
+```
+
+
+reverse proxy - load balance(hiden backend endpoint.replicate cert, single point failer transfer, health check) - backend routing - cache - api gateway
+
+operate on layer 4, you gain access to tcp context
+source ip, source port,
+dest-ip, dest-port,
+packet insepction(tls hello/ syn)
 
 mysql protocol(layer 4 proxying is useful when nginx doesn't understand the protocol)
 webrtc stream context
@@ -19,26 +77,10 @@ webrtc stream context
 layer 7. we see the applcation, http/gRPC, websocket context
 access to more context
 `$request_uri` which page they wanna visit, `$host` where the client is come from
-`header` `cookie` 
+`header` `cookie`
 
+tls: end-to-end encryption,termination, passthrough
 
-
-tls: end-to-end encryption
-
-
-tls termination
-
-tls passthrough
-
-client-side timeout
-client_header_timeout: transfer entire headers(default to 60s) 408(Request Time-out)
-client_body_timeout: big-file-upload chunk strategy
-keepalive_timeout: `conncetion:keep-alive`,(establish connection every request) cleanup idle connection
-lengering_timeout: wait close connection
-resolver_timeout: 
-
-
-error attemp to communicate with server
 
 proxy_connect
 proxy_send
@@ -47,12 +89,7 @@ proxy_next_upstream_timeout: time before Passing a request to the next server
 proxy_next_upstream_tries
 server-side timeout
 
-
-
-
-
 nginx timeout ensure efficient use of resources
-
 
 server web content
 
@@ -66,43 +103,33 @@ sudo killall -HUP mDNSResponder
 
 # Before installing any new software, it's best practice to update your system's package index. This ensures that you have the latest updates and security patches.
 
-sudo dnf update -y
-sudo dnf install python3
-sudo dnf install python3-pip
-pip3 install virtualenv`
-
-sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-sudo dnf install -y neovim python3-neovim
 
 
-sudo apt install bat
 
-#  to know which version of CentOS 
+sudo apt install bat neovim
+
+#  to know which version of CentOS
 cat /etc/centos-release
 # to know which version of unbuntu
 cat /etc/os-release
 
 
-# add epel repo 
-sudo dnf install epel-release
-sudo dnf upgrade
-# imported into the base CentOS repos
+# add epel repo
+
 # instal and enable service
 sudo dnf install snapd
 sudo systemctl enable --now snap.socket
-# link `smap` command to executable path
+
 sudo ln -s /var/lib/snapd/snap /snap
-# installed snapd first in order to manage snap packages
-sudo snap install core; sudo snap refresh core
+
+
 # link the `certbot` command to executable path
 sudo ln -s /snap/bin/certbot /usr/bin/certbot
 ```
 
 infra as code(IaC) provision infra in a reusable and compasable way
 
-
 delgated management, inverse of control, vendor lock-in deployment
-
 
 self-hoisting ,docker standalone
 
@@ -110,16 +137,27 @@ Push to Deploy
 
 ## Before you start
 
-### asign server floating/transferable ip
+
+### rent and launch server from cloud server provider
 
 
-- rented server from a server provider to hoisied webiste
 
-- can access via ssh
+This could be:
 
-##  non-root, sudo-enabled user connection
+-   A VPS (Virtual Private Server)
+-   A Dedicated Server
+-   A Virtual Machine (VM)
+-   A Raspberry Pi
+-   A Colocation Data Center(主机托管)
+>datacenter facility that rents out rack space to third parties for their servers or other network equipment
+
+## configure security group
+
+
+
+## non-root, sudo-enabled user connection
+
 `ssh -i "~/.ssh/id.root@host.docker.droplet" -o IdentitiesOnly=yes opus@droplet`
-
 
 ```[~/.ssh/config]
 Host droplet
@@ -129,43 +167,35 @@ Host droplet
     # IdentityOnly
     IdentityFile ~/.ssh/id.root@host.docker.droplet
     AddKeysToAgent yes
-    # 连接的服务器的地址和端口作为变量并以参数的形式传递给 ProxyCommand  using socks5 tpc协议（ssh,sftp)
+    # 连接的服务器的地址和端口作为变量并以参数的形式传递给 ProxyCommand  using socks5 tcp协议（ssh,sftp)
     ProxyCommand nc -X 5 -x 127.0.0.1:6153 %h %p
     # or using jump hosts
     ProxyCommand ssh jumphost -W %h:%p
 ```
+
 ```bash
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id.root@host.docker.droplet
 ssh droplet
-# transfer local file
-# using SFTP, SCP, or Rsync 
+# transfer local file  using SFTP, SCP, or Rsync
 # or just login shell and  put deploy.sh mail/
-sftp droplet /home/opus/mail <<< $'put deploy.sh'
+sftp droplet:/home/opus/app/ <<< $'put .env'
 ```
-This could be:
-- A VPS (Virtual Private Server)
-- A Dedicated Server
-- A Virtual Machine (VM)
-- A Raspberry Pi 
 
 
-### Supported Operating Systems
+###  OS, Arch and hareware requirment
 
-- Debian-based (e.g., Debian, Ubuntu)
-- Redhat-based (e.g., CentOS, Fedora, Redhat)
-- SUSE-based (e.g., SLES, SUSE, openSUSE)
-- Arch Linux
-- Alpine Linux
-- Raspberry Pi OS 64-bit (Raspbian)
+OS
+-   Debian-based (e.g., Debian, Ubuntu)
+-   Redhat-based (e.g., CentOS, Fedora, Redhat)
+-   SUSE-based (e.g., SLES, SUSE, openSUSE)
+-   Arch Linux
+-   Alpine Linux
+-   Raspberry Pi OS 64-bit (Raspbian)
 
-### Supported Architectures
-
-- AMD64
-- ARM64
-
-###  Minimum Hardware Requirements
-
+Arch
+-   AMD64
+-   ARM64
 
 
 ::: info setup example
@@ -189,45 +219,28 @@ Ghost (newsletters)
 
 
 
-### Andras runs his production apps on a server with:
-
-Memory: 8GB (average usage: 3.5GB)
-CPU: 4 cores (average usage: 20–30%)
-Storage: 150GB (average usage: 40GB)
-This setup comfortably supports:
-
-3 NodeJS apps
-4 Static sites
-Plausible Analytics
-Fider (feedback tool)
-UptimeKuma (uptime monitoring)
-Ghost (newsletters)
-3 Redis databases
-2 PostgreSQL databases
-
-
 
 ## command prompt setup
 
-``.bashrc`
+`` .bashrc`
 export PS1='[\u@\h \w]✗'
-``
+ ``
 
 ## SSH setup
 
 1. edit ssh configuartion
-
 
 ```bash
 vi /etc/ssh/sshd_config
 ```
 
 Ensure these settings are present:
-enable root login but disable w/ passwd
-```ssh 
+enable root login but disable with passwd
+
+```ssh
 PermitRootLogin prohibit-password
 PubkeyAuthentication yes
-AuthorizedKeysFile      .ssh/authorized_keys
+AuthorizedKeysFile  .ssh/authorized_keys
 ```
 
 ::: caution
@@ -243,46 +256,65 @@ systemctl restart sshd
 
 ### keep session alive
 
-``~/.ssh/sshdconfig
-Host *
-    ServerAliveInterval 120
-    ServerAliveCountMax 2
-
-```
+``~/.ssh/sshd_config
+Host \*
+ServerAliveInterval 120
+ServerAliveCountMax 2
+````
 
 
 ```/etc/ssh/sshd_config
 ClientAliveInterval 120
 ClientAliveCountMax 3
-```
+````
+
+
+## Deploy solution
+
+
+AWS EKS
+Elastic Kubernetes Service
+
+AWS ECS
+Elastic Container Service
+
+[flight control](https://www.flightcontrol.dev/?ref=docs-vite)
+[kinsta](https://kinsta.com/static-site-hosting/)
+
+
+## Deploy from Source
+
+
+
+## Deploy built image
+
+
+
 
 
 ## GitHub integration
+
 Webhooks
 
 `https://api.github.com/meta ` to retive list of github ip address
 
 use pre-built Docker images from public registries like Docker Hub or GitHub Container Registry
 
-
-| Features| Explainations |
-|---| ---|
-|  Any Service | Deploy static sites, APIs, backends, databases, and more with support for all major frameworks.|
-| server arch| single servers, multi-server setups, and Docker Swarm clusters|
-|Push to Deploy | Git integration with GitHub, GitLab, Bitbucket, Gitea, and other platforms|
-|Free SSL Certificates| Certificates	Automatically sets up and renews Let's Encrypt SSL certificates for custom domains|
-|No Vendor Lock-In| |
-|Automatic Backups| |
-|webHook| Integrate with CI/CD tools like GitHub Actions, GitLab CI, or Bitbucket Pipelines.|
-|Monitoring| Monitor deployments, servers, disk usage, uptime and receive alerts for issues|
-|Email Notifications | |
-|Backups ||
-|Server Automations||
-
-
+| Features              | Explainations                                                                                   |
+| --------------------- | ----------------------------------------------------------------------------------------------- |
+| Any Service           | Deploy static sites, APIs, backends, databases, and more with support for all major frameworks. |
+| server arch           | single servers, multi-server setups, and Docker Swarm clusters                                  |
+| Push to Deploy        | Git integration with GitHub, GitLab, Bitbucket, Gitea, and other platforms                      |
+| Free SSL Certificates | Certificates Automatically sets up and renews Let's Encrypt SSL certificates for custom domains |
+| No Vendor Lock-In     |                                                                                                 |
+| Automatic Backups     |                                                                                                 |
+| webHook               | Integrate with CI/CD tools like GitHub Actions, GitLab CI, or Bitbucket Pipelines.              |
+| Monitoring            | Monitor deployments, servers, disk usage, uptime and receive alerts for issues                  |
+| Email Notifications   |                                                                                                 |
+| Backups               |                                                                                                 |
+| Server Automations    |                                                                                                 |
 
 built your image from dockerfile
-
 
 ✗
 
@@ -292,27 +324,25 @@ https://www.coolify.io/
 
 https://getdeploying.com/
 
-https://www.serverless.com/#How-It-works
-
+https://w       ww.serverless.com/#How-It-works
 
 ## Networking
 
 
+Wildcard Domain 
+
+
 ### Firewall setup
 
-
-
-
+allow tcp port（端口放行)
 8000 (http), 6001 (websocket), 6002 (terminal), and 22 (SSH, or a custom port) (required)
- reverse proxy (Traefik or Caddy)
+reverse proxy (Traefik or Caddy)
 
+https://developers.redhat.com/blog/2020/08/18/iptables-the-two-variants-and-their-relationship-with-nftables#the_kernel_api
 
- https://developers.redhat.com/blog/2020/08/18/iptables-the-two-variants-and-their-relationship-with-nftables#the_kernel_api
+-   iptables-legacy.
 
-- iptables-legacy.
-
-- `nf_tables`: Often referred to as `iptables-nft`
-
+-   `nf_tables`: Often referred to as `iptables-nft`
 
 ```bash
 sudo ufw app list
@@ -400,14 +430,13 @@ sudo iptables -A INPUT -p tcp --dport 143 -m conntrack --ctstate NEW,ESTABLISHED
 
 ### SSL sertificates
 
--  Self-Signed 
--  Authority-signed
-All subdomains (wildcard)
+-   Self-Signed
+-   Authority-signed
+    All subdomains (wildcard)
 
 secures the domain’s apex and any subdomains that do not have an existing DNS records defined.
 
-
-Select an existing subdomain:  secures the domain’s apex and only selected subdomains.
+Select an existing subdomain: secures the domain’s apex and only selected subdomains.
 
 ::: code-group
 
@@ -472,6 +501,7 @@ server {
 }
 
 ````
+
 ```bash
 ls -ld $(pwd)
 sudo chown -R $(whoami):$(whoami) .
@@ -479,7 +509,6 @@ chmod u+rwx .
 ```
 
 :::
-
 
 ````bash
 sudo dnf install certbot -y
@@ -548,70 +577,62 @@ configure SSL certificates for each Domain we hosting on ouer server using Let's
 
 ## Record
 
- A record maps an IPv4 address to a domain name
+A record maps an IPv4 address to a domain name
 
-#### HOSTNAME 
+#### HOSTNAME
 
 defines the hostname or subdomain to map. This can be:
 
-- The apex of a domain (@).
-- A subdomain prefix
-- A wildcard (*)
- if any kind of DNS record exists for a subdomain, the existing record takes priority and the wildcard record is not applied.
- doesn’t have a DNS record for that subdomain, the wildcard record directs you to the resource or IP address specified in its WILL DIRECT TO field.
-
+-   The apex of a domain (@).
+-   A subdomain prefix
+-   A wildcard (\*)
+    if any kind of DNS record exists for a subdomain, the existing record takes priority and the wildcard record is not applied.
+    doesn’t have a DNS record for that subdomain, the wildcard record directs you to the resource or IP address specified in its WILL DIRECT TO field.
 
 It is possible to add multiple records for the same DNS entry, each pointing to a different IP address. This supports a load distribution and balancing strategy known as Round Robin DNS.
 
-
 ### CNAME
 
-`HOSTNAME`:  defines the subdomain prefix for the new alias you want to create.
-`IS AN ALIAS OF`:defines the hostname where the alias points to. 
+`HOSTNAME`: defines the subdomain prefix for the new alias you want to create.
+`IS AN ALIAS OF`:defines the hostname where the alias points to.
 
-### MX 
+### MX
 
 `HOSTNAME`
 `MAIL PROVIDERS MAIL SERVER`
 
-
 ### TXT
 
+primarily used to verify that you own a domain.
 
- primarily used to verify that you own a domain.
-
-`VALUE` -  contains the text string associated with the hostname
+`VALUE` - contains the text string associated with the hostname
 `google-site-verification`
-`HOSTNAME` -  hostname the record applied to
-
+`HOSTNAME` - hostname the record applied to
 
 ### SPF Records
 
- contain lists of email servers that are authorized to send email on behalf of your domain.
+contain lists of email servers that are authorized to send email on behalf of your domain.
 
 ### NS Records
-
 
 servers that host your domain
 
 `WILL DIRECT TO`
 
-
-### CAA Records  
+### CAA Records
 
 CAA records specify which certificate authorities are permitted to issue certificates for a domain
 
-
-### PTR (rDNS) Records 
-
+### PTR (rDNS) Records
 
 map domains name to an IP address.
 
-
 ## web server
+
 ::: code-group
+
 ````bash [nginx]
-# manage nginx process 
+# manage nginx process
 service nginx
 Usage: nginx {start|stop|restart|reload|force-reload|status|configtest|rotate|upgrade}
 
@@ -674,23 +695,26 @@ sudo nginx -t
 sudo systemctl restart nginx
 
 ````
-- `/etc/nginx`: config directory.  All of the Nginx configuration files reside here.
-- `/etc/nginx/sites-available/`: The directory where per-site server blocks can be stored.
-- `/etc/nginx/snippets`: reusable and coposable configuration fragments that can be included elsewhere in the Nginx configuration
-- `/etc/nginx/sites-enabled/`: The directory where enabled per-site server blocks are stored.
--  `/var/log/nginx/access.log`
--  `/var/log/nginx/error.log`
+
+-   `/etc/nginx`: config directory. All of the Nginx configuration files reside here.
+-   `/etc/nginx/sites-available/`: The directory where per-site server blocks can be stored.
+-   `/etc/nginx/snippets`: reusable and coposable configuration fragments that can be included elsewhere in the Nginx configuration
+-   `/etc/nginx/sites-enabled/`: The directory where enabled per-site server blocks are stored.
+-   `/var/log/nginx/access.log`
+-   `/var/log/nginx/error.log`
 
 ```bash [apache]
 
 ```
+
 :::
 
- dictate how the Apache web server will respond to various domain requests.
+dictate how the Apache web server will respond to various domain requests.
+
 ````bash
 # install web server
-# allow one server to host multiple domains 
-# Each domain that is configured will direct the visitor to a specific directory holding that site’s information, 
+# allow one server to host multiple domains
+# Each domain that is configured will direct the visitor to a specific directory holding that site’s information,
 
 # apache server identifies  the `/wwww/html` as root directory to server files from
 # this need to be change when hostiing multi domain on one server
@@ -716,12 +740,6 @@ sudo chmod u=rwx,og=rx 755 /var/www
 #  tell server to look for virtual hosts in the sites-enabled directory.
 
 
-# on Redhat-based (e.g., CentOS, Fedora, Redhat)
-sudo vi /etc/httpd/conf/httpd.conf
-# on Debian-based (e.g., Debian, Ubuntu)
-sudo vi /etc/apache2/apache2.conf
-# nginx
-sudo vi /etc/nginx/nginx.conf
 
 
 # located in /etc/apache2/conf.d/ or /etc/httpd/conf.d/
@@ -739,7 +757,7 @@ IncludeOptional sites-enabled/*.conf
 
 sudo vi /etc/httpd/sites-available/0x13f.me.conf
 
-# delcare server name, listening port, 
+# delcare server name, listening port,
 # root directory to server file from to site
 # store access and error log
 
@@ -763,16 +781,12 @@ sudo ln -s /etc/httpd/sites-available/0x13f.me.conf /etc/httpd/sites-enabled/0x1
 sudo ln -s /etc/nginx/sites-available/0x13f.me.conf /etc/nginx/sites-enabled/0x13f.me.conf
 
 #check configuration for syntax error by typing
-sudo apachectl configtest 
+sudo apachectl configtest
 # restart server config to make change take effect
 sudo apachectl restart
 ````
 
-
-
-
 ## Database
-
 
 ```bash
 
@@ -786,16 +800,13 @@ FLUSH PRIVILEGES;
 NTP / SSH Server
 DNS / DHCP Server
 Storage Server
- Virtualization
- Container Platform
- Cloud Compute
- Directory Server
- Web Server
- Database
- FTP / Samba / Mail
- Proxy / Load Balance
- Monitoring
- Security
-
-
- 
+Virtualization
+Container Platform
+Cloud Compute
+Directory Server
+Web Server
+Database
+FTP / Samba / Mail
+Proxy / Load Balance
+Monitoring
+Security

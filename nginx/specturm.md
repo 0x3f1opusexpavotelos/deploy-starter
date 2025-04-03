@@ -1,7 +1,7 @@
 (Usage statistics and market shares of web servers)[https://w3techs.com/technologies/overview/web_server]
 
 litespedd web server
-LiteSpeed redirects non trusted visitors to a static page when the server detects high load. 
+LiteSpeed redirects non trusted visitors to a static page when the server detects high load.
 moving reCAPTCHA from the application level to the server level.
 
 apache web server
@@ -13,7 +13,7 @@ server timezone
 ```bash
 sudo timedatectl | grep Europe
 # server timezone match local timezone
-suod timedatectl set-timezone 
+suod timedatectl set-timezone
 
 ```
 
@@ -74,7 +74,7 @@ cat /proc/mounts
 
 
 
-Mailu.io 
+Mailu.io
 
 twilo
 ```bash [.msmtprc]
@@ -89,7 +89,7 @@ host smtp.gmail.com
 port 587
 auth on
 user vps@gmail.com
-password 
+password
 from
 ```
 email apis, stmp relay, wehook
@@ -126,29 +126,6 @@ events
 http
 server
 location
-```bash
-# match as exact
 
-# match as prefix
-location ^~ 
-
-# match as regex
-# try files directive
-# check file  for specifieed order
-location / {
-    try_files $uri $uri/
-}
-
-ls /etc/nginx/
-conf.d        fastcgi_params  koi-win     modules-available  nginx.conf    scgi_params      sites-enabled  uwsgi_params
-fastcgi.conf  koi-utf         mime.types  modules-enabled    proxy_params  sites-available  snippets       win-utf
-```
 stream
-
-## server blck
-
-```bash 
-# fallback to any incoming reuqest
-server {
-}
-```
+proxy_bypass

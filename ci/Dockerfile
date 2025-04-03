@@ -5,7 +5,7 @@ USER root
 
 # install pip
 
-RUN  curl https://bootstrap.pypa.io/get-pip.py -o "get-pip.py" && python get-pip.py
+RUN  curl https://bootstrap.pypa.io/get-pip.py -o "get-pip.py" &&  get-pip.py
 
 
 apt-get -y install docker-ce

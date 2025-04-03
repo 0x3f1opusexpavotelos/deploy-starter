@@ -1,0 +1,16 @@
+services:
+  nodeserver:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    npm:
+      build: ./
+      stdin_open: true
+      tty: true
+      volumes:
+        - ./:/app
+    image: "nginx:stable-alpine"
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro

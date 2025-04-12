@@ -1,0 +1,8 @@
+services:
+  nodeserver:
+    build:
+      context: .
+  nodeserver-tools:
+    build:
+      context: .
+      dockerfile: Dockerfile-tools

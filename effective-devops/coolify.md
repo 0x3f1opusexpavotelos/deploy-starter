@@ -1,3 +1,4 @@
+## sever control panel
 
 ```bash
 sudo docker run caddy caddy hash-password -p <secret>
@@ -15,6 +16,9 @@ docker ps -aq --filter status=exited | xargs docker rm
 
 # stop all running containers
 docker stop $(docker ps -q)
+
+# stop all running container start with coolify
+docker ps --filter "name=^/coolify" --format "{{.ID}}" | xargs -r docker stop
 
 # remove all containers
 docker rm $(docker ps -aq)

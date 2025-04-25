@@ -1,0 +1,17 @@
+db admin
+backup admin
+db designer
+db manager
+
+monitor admin
+process admin
+replication admin
+user admin
+
+
+def downgrade() -> None:
+  op.drop_column('phone')
+
+
+def upgrade() -> None:
+  op.add_column('phone', sa.Column('phone_num', sa.String()), nullable=true)

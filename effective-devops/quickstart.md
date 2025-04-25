@@ -1,5 +1,6 @@
 ---
 title: no vendor lock-in self-hoisted solution
+tech: ELK stack(Elasticsearch、Logstash 和 Kibana), JAMSTACK, t3stack, 
 ---
 # nginx
 
@@ -19,7 +20,7 @@ FROM node:20-alpine AS base
 
 
 
-# By default, Nginx looks in the /usr/share/nginx/html directory inside of the container for files to serve.
+
 
 
 
@@ -136,19 +137,62 @@ self-hoisting ,docker standalone
 Push to Deploy
 
 ## Before you start
+## server control panel
+
+coolify
+1panel
+virtualmin
+
+## mail server
+
+mail transfer agent
+
+sender policy framework
+
+smtp credential
+
+spf
+dkim
+dmarc
+domainkey
+ptr
 
 
-### rent and launch server from cloud server provider
+```bash
+docker run --rm -it \
+-v "${PWD}/docker-data/certbot/certs/:/etc/letsencrypt" \
+-v "${PWD}/docker-data/certbot/logs/:/var/log/letsencrypt" \
+-p 80:80 \
 
 
+sudo certbot certonly --standalone -d $DOMAIN_NAME --non-interactive --agree-tos -m $EMAIL
 
-This could be:
 
--   A VPS (Virtual Private Server)
--   A Dedicated Server
--   A Virtual Machine (VM)
--   A Raspberry Pi
--   A Colocation Data Center(主机托管)
+sudo usermod -aG docker $USER
+su - $USER
+```
+
+ssl for 465, tls for  587
+
+server authentication protocol
+```bash
+systemctl status mariadb.service
+
+nvim /etc/mysql/mariadb.conf.d
+service mariadb restart
+
+journalctl -xe
+```
+### rent server with public ip
+
+host: connected network device or machine, laptop, phone,
+
+server: web server, mail server, file server, dns server, db server
+
+
+popagate across global dns network
+
+
 >datacenter facility that rents out rack space to third parties for their servers or other network equipment
 
 ## configure security group
@@ -177,9 +221,7 @@ Host droplet
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id.root@host.docker.droplet
 ssh droplet
-# transfer local file  using SFTP, SCP, or Rsync
-# or just login shell and  put deploy.sh mail/
-sftp droplet:/home/opus/app/ <<< $'put .env'
+
 ```
 
 
@@ -226,47 +268,7 @@ Ghost (newsletters)
 export PS1='[\u@\h \w]✗'
  ``
 
-## SSH setup
 
-1. edit ssh configuartion
-
-```bash
-vi /etc/ssh/sshd_config
-```
-
-Ensure these settings are present:
-enable root login but disable with passwd
-
-```ssh
-PermitRootLogin prohibit-password
-PubkeyAuthentication yes
-AuthorizedKeysFile  .ssh/authorized_keys
-```
-
-::: caution
-Make sure to add your SSH keys to the `~/.ssh/authorized_keys` `/root/.ssh/authorized_keys` file before setting PermitRootLogin to prohibit-password, otherwise you may lock yourself out of the server.
-:::
-
-
-2. restart sshd service
-
-```bash
-systemctl restart sshd
-```
-
-### keep session alive
-
-``~/.ssh/sshd_config
-Host \*
-ServerAliveInterval 120
-ServerAliveCountMax 2
-````
-
-
-```/etc/ssh/sshd_config
-ClientAliveInterval 120
-ClientAliveCountMax 3
-````
 
 
 ## Deploy solution
@@ -332,238 +334,9 @@ https://w       ww.serverless.com/#How-It-works
 Wildcard Domain 
 
 
-### Firewall setup
 
-allow tcp port（端口放行)
-8000 (http), 6001 (websocket), 6002 (terminal), and 22 (SSH, or a custom port) (required)
-reverse proxy (Traefik or Caddy)
 
-https://developers.redhat.com/blog/2020/08/18/iptables-the-two-variants-and-their-relationship-with-nftables#the_kernel_api
 
--   iptables-legacy.
-
--   `nf_tables`: Often referred to as `iptables-nft`
-
-```bash
-sudo ufw app list
-# add rule by specifying a name of the program
-sudo ufw allow OpenSSH
-# sudo ufw allow 22
-
-
-ufw default deny incoming
-ufw default allow outgoing
-
-
-sudo ufw allow http
-# sudo ufw allow 80/tcp
-
-sudo ufw allow https
-# sudo ufw allow 443/tcp
-sudo ufw allow ssh
-# sudo ufw allow 22/tcp
-sudo ufw allow ftp
-# sudo ufw allow 21/tcp
-# smtp
-sudo ufw allow 25/tcp
-# imap
-sudo ufw allow 143/tcp
-
-
-# once you’ve defined all the rules you want to apply to your firewall
-sudo ufw enable
-# to disable
-sudo ufw disable
-# to reset
-sudo ufw reset
-
-
-
-# confirm change
-sudo ufw status
-
-# allow port range
-# sudo ufw allow 6000:6007/tcp
-# sudo ufw allow 6000:6007/udp
-
-# ip address
-# ufw allow from 111.222.333.444
-
-# Deleting Rules
-ufw delete allow ssh
-```
-
-```bash [firewall.sh]
-# Flush all current rules from iptables
- iptables -F
-# Allow SSH connections on tcp port 22
-iptables -A INPUT -p tcp --dport 22 -j ACCEPT
-
-# Set default policies for INPUT, FORWARD and OUTPUT chains
- iptables -P INPUT DROP
- iptables -P FORWARD DROP
- iptables -P OUTPUT ACCEPT
-
-# Accept packets from trusted IP addresses
- iptables -A INPUT -s 192.168.0.0/24 -j ACCEPT  # using standard slash notation
-
-# Set access for localhost
- iptables -A INPUT -i lo -j ACCEPT
-
-# Incoming http and https
-sudo iptables -A INPUT -p tcp -m multiport --dports 80,443 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
-sudo iptables -A OUTPUT -p tcp -m multiport --dports 80,443 -m conntrack --ctstate ESTABLISHED -j ACCEPT
-
-# Incoming SMTP
-sudo iptables -A INPUT -p tcp --dport 25 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
-
-# Incoming IMAP
-sudo iptables -A INPUT -p tcp --dport 143 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
-
-
-
-# Save settings
- /sbin/service iptables save
-# List rules
- iptables -L -v
-```
-
-### SSL sertificates
-
--   Self-Signed
--   Authority-signed
-    All subdomains (wildcard)
-
-secures the domain’s apex and any subdomains that do not have an existing DNS records defined.
-
-Select an existing subdomain: secures the domain’s apex and only selected subdomains.
-
-::: code-group
-
-````bash
-
-sudo certbot --nginx -d <example.com> -d <www.example.com>
-
-#Certificate is saved at: /etc/letsencrypt/live/0x13f.me/fullchain.pem
-#Key is saved at:         /etc/letsencrypt/live/0x13f.me/privkey.pem
-
-```
-limit_req_zone \$binary_remote_addr zone=mylimit:10m rate=10r/s;
-server {
-
-
-        server_name 0x13f.me www.0x13f.me;
-
-#        root /var/www/0x13f.me/app;
-        # location / {
-        #         try_files $uri $uri/ =404;
-        # }
-         # Enable rate limiting
-        limit_req zone=mylimit burst=20 nodelay;
-        location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
-
-        # Disable buffering for streaming support
-        proxy_buffering off;
-        proxy_set_header X-Accel-Buffering no;
-    }
-
-    listen [::]:443 ssl ipv6only=on; # managed by Certbot
-    listen 443 ssl; # managed by Certbot
-    ssl_certificate /etc/letsencrypt/live/0x13f.me/fullchain.pem; # managed by Certbot
-    ssl_certificate_key /etc/letsencrypt/live/0x13f.me/privkey.pem; # managed by Certbot
-    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
-
-
-}
-server {
-    if ($host = www.0x13f.me) {
-        return 301 https://$host$request_uri;
-    } # managed by Certbot
-
-
-    if ($host = 0x13f.me) {
-        return 301 https://$host$request_uri;
-    } # managed by Certbot
-
-
-        listen 80;
-        listen [::]:80;
-
-        server_name 0x13f.me www.0x13f.me;
-    return 404; # managed by Certbot
-}
-
-````
-
-```bash
-ls -ld $(pwd)
-sudo chown -R $(whoami):$(whoami) .
-chmod u+rwx .
-```
-
-:::
-
-````bash
-sudo dnf install certbot -y
-
-# SUID 4
-# SGID = 2
-# Sticky = 1
-# GID allows a file to be executed as the group owner of the file;
-#  a file created in the directory has its group ownership set to the directory owne
-#  Only the owner (and root) of a file can remove the file within that directory. (o+t)
-
-chmod 0755 /etc/letsencrypt/{live,archive}
-
-# All generated keys and issued certificates can be found in /etc/letsencrypt/live/$domain,
-
-# fullchain.pem  server certificate
-# renwew
-sudo nvim /etc/letsencrypt/renewal/<domain>.conf
-
-sudo nvim /etc/htttpd/conf.d/0x13f.me.conf
-
-```
-<VirtualHost *:443>
-    ServerName 0x13f.me
-    DocumentRoot /var/www/ssl-test
-    SSLEngine on
-    SSLCertificateFile /etc/pki/tls/certs/apache-selfsigned.crt
-    SSLCertificateKeyFile /etc/pki/tls/private/apache-selfsigned.key
-</VirtualHost>
-
-
-<VirtualHost *:80>
-    ServerName 0x13f.me
-    Redirect / https://0x13f.me
-</VirtualHost>
-```
-
-
-
-```
-<VirtualHost *:443>
-    ServerName 0x13f.me
-    DocumentRoot /var/www/ssl-test
-    SSLEngine on
-    SSLCertificateFile /etc/pki/tls/certs/apache-selfsigned.crt
-    SSLCertificateKeyFile /etc/pki/tls/private/apache-selfsigned.key
-</VirtualHost>
-
-# redirect
-<VirtualHost *:80>
-    ServerName 0x13f.me
-    Redirect / https://0x13f.me
-</VirtualHost>
-```
-````
 
 ## DNS
 
@@ -627,74 +400,23 @@ CAA records specify which certificate authorities are permitted to issue certifi
 
 map domains name to an IP address.
 
-## web server
-
-::: code-group
-
-````bash [nginx]
-# manage nginx process
-service nginx
-Usage: nginx {start|stop|restart|reload|force-reload|status|configtest|rotate|upgrade}
 
 
-apt show nginx
-ps axf | grep nginx
-batcat /etc/nginx/nginx.conf
-sudo tail --follow /var/log/nginx/error.log
-sudo tail --follow /var/log/nginx/access.log
 
-# the host header driver sever selection
-# you can hvae multi service listen on same port
-curl localhost:8081 -v -H "Host:mail.host.com"
-
-# stream module
-docker compose exec nginx bash
-#   -s signal     : send signal to a master process: stop, quit, reopen, reload
-nginx -s reload
-
-``` [/etc/nginx/nginx.conf]
-http {
-    ...
-    # Virtual Host Configs
-     include /etc/nginx/conf.d/*.conf;
-     include /etc/nginx/sites-enabled/*;
-}
-```
-
-
-# multi-domain content layout
-# nginx default serve file from directory `/var/www/html`
-sudo mkdir -p /var/www/<your_domain>/html
-sudo chown -R $USER:$USER /var/www/<your_domain>/html
-# grant only read and execut to others
-sudo chmod -R 755 /var/www/<your_domain>
-nvim /var/www/<your_domain>/html/index.html
-
-# setup server blocks
-sudo nvim /etc/nginx/sites-available/<your_domain>
-
-```
-server {
-        listen 80;
-        listen [::]:80;
-
-        root /var/www/your_domain/html;
-        index index.html index.htm index.nginx-debian.html;
-
-        server_name your_domain www.your_domain;
-
-        location / {
-                try_files $uri $uri/ =404;
-        }
-}
-```
 #  delete the shortcut from the sites-enabled directory while keeping the server block in sites-available if you wanted to enable it.
+
+
+````
+
+## multi domain, multi-server organzation
+```
 sudo ln -s /etc/nginx/sites-available/your_domain /etc/nginx/sites-enabled/
 # test if ant syntax error in config file
 sudo nginx -t
 sudo systemctl restart nginx
+```
 
-````
+
 
 -   `/etc/nginx`: config directory. All of the Nginx configuration files reside here.
 -   `/etc/nginx/sites-available/`: The directory where per-site server blocks can be stored.

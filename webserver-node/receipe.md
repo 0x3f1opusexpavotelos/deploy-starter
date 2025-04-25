@@ -120,7 +120,7 @@ chmod +x scripts/generate-cert.sh
 # cert sign request(CSR)
 ```
 
-## security with hlmet.js
+## security with hemlet.js
 
 xss protection
 https enforcement

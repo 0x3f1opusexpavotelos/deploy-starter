@@ -1,0 +1,24 @@
+<html>
+  <head>
+
+      <title> {{template "title" .}} - webserver starter</title>
+  </head>
+
+  <body>
+      <header>
+          <a> <img></a>
+      </header>
+      
+      <main>
+          {{block "sidebar" .}}
+          
+                <p> sidebar go into here</p>
+          {{end}}
+
+          {{template "main . }}
+      </main>
+      
+      <footer> </footer>
+  </body>
+
+</html>

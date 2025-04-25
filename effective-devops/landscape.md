@@ -36,12 +36,170 @@ why - reasons and motivations behind the strategy
 what - intended to acheive, aims to accomplish
 who - are benefiting from this
 
-### ci tools
+### CI/CD
+
+continouse integration - code change and validated and merged back into main branch as often as possible
+
+continouse delivery - code change are automatically built and ready for production
+
+continouse deployment - built are automatically deployed to production
+
+multi-cloud continouse delivery
+spinnaker
 
 github ci
 github ci
 travis ci
 circle ci
+
+policy(strategy)
+imagePull, retry,deployment(rolling updates, recreate, blue-green, canary)
+branch strategy(feat/*, bugfix/*)
+handler
+exit handler
+
+
+cluster
+cluster role, rolebinding, customroledefinition, namespace, node, persistentvolume,
+storageclass, volumeattachment, priorityclass
+
+state in k8s cluster compare state against define in the git repo,
+
+
+
+port: internal cluster port
+targetPort: app listen on port/container
+nodePort external port on every cluster node
+
+event binding:
+event type: external source: webhooks, message queues, timers
+event source: cron scheduler, webhook endpoint, where and how to listen 
+sensors: trigger actions based on those event, trigger a workflow
+
+
+```yml
+spec:
+  onExit: exit-handler
+  templates:
+    - name: exit-handler
+      steps:
+        - name: notify
+          tempalte: send-email
+        - name: c
+```
+controller
+
+utilization 
+config as code
+workflow as code
+
+
+
+
+resource template
+```yml
+environment provision
+kubernetes resource management: Deployment, Service, ConfigMap
+application lifecycle management
+
+valueFrom
+timeout: # timeout controller
+retryStrategy: # retry 
+
+resources:
+  limits:
+    memory: 32mi
+    cpu: 100m
+```
+container template
+script template
+
+```yml
+args
+labels:
+env:
+resource: CPU and memory, disk allocation and limits for the container
+container:
+
+  image: python:3.12.10-alpine3.20
+  command: ['python', '-c']
+  args: ['']
+  imagePullPolicy: always,never,ifnotpresent
+
+
+
+
+tekton deploy and rollback
+clone ->  build -> test -> image build -> deploy -> rollback
+ 
+argoCD
+travis
+
+
+
+
+
+pause and resume workflow
+timeout 
+rate limiting
+wait for
+manual approval
+## Security
+
+OAuth
+JWT
+RBAC
+OWASP API Top 10
+API Data Leaks
+
+## argo
+
+manage and automate infra and app delivery
+
+component:
+
+api server: 
+
+app controller
+
+repo server:
+
+pulls application manifests and 
+
+dex:
+identity provider
+redis
+
+access and permission:
+
+cluster(amazon eks, azure eks, google gke)
+
+network configuration
+
+firewall and security group
+ingress controller
+
+
+push-based modal:
+
+change are pushed to git repo,
+sync app or infra with desired state delcare in git repo
+rollback recovery
+multi-cluster support
+visualization dashboard
+
+
+notification and alert
+pre-sync and post-sync hook
+
+
+
+pull and reconciliation:
+automation tool continuously pull from git repo and reconcile to match declare state
+automated sync reduce manual interventions and configuration
+
+
+
 
 ## IAC framework - automate,privison and govern infrastructure at scale
 
@@ -134,7 +292,7 @@ secret valut
 
 Install a compatible application such as Google Authenticator, Duo Mobile, or Authy app on your mobile device or computer.
 
-[doppler ](https://www.doppler.com/) secert rotate, co-location
+
 [localstack](https://www.localstack.cloud/)
 
 
